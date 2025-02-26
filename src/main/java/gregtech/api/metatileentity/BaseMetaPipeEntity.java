@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
@@ -492,8 +493,8 @@ public class BaseMetaPipeEntity extends CommonBaseMetaTileEntity
     }
 
     @Override
-    public Map<String, String> getInfoMap() {
-        return canAccessData() ? getMetaTileEntity().getInfoMap() : Collections.emptyMap();
+    public Map<String, Supplier<String>> getInfoCallbacks() {
+        return canAccessData() ? getMetaTileEntity().getInfoCallbacks() : Collections.emptyMap();
     }
 
     @Override

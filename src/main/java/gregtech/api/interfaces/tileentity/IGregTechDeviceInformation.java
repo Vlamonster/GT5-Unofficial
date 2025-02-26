@@ -2,6 +2,7 @@ package gregtech.api.interfaces.tileentity;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * You are allowed to include this File in your Download, as i will not change it.
@@ -28,11 +29,11 @@ public interface IGregTechDeviceInformation {
     }
 
     /**
-     * Returns a map of key-value pairs containing device information.
+     * Returns a map of key-value pairs containing callbacks to device information.
      *
-     * @return a Map where keys are information categories and values are corresponding details.
+     * @return a Map where keys are information categories and values are suppliers of corresponding details.
      */
-    default Map<String, String> getInfoMap() {
+    default Map<String, Supplier<String>> getInfoCallbacks() {
         return Collections.emptyMap();
     }
 }

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -1981,32 +1982,61 @@ public abstract class MTEMultiBlockBase extends MetaTileEntity
     }
 
     @Override
-    public Map<String, String> getInfoMap() {
-        long energy = 0, maxEnergy = 0, maxEnergyUsage = 0, minEnergyTier = Long.MAX_VALUE;
+    public Map<String, Supplier<String>> getInfoCallbacks() {
+        Map<String, Supplier<String>> callbacks = new HashMap<>();
 
-        for (MTEHatchEnergy tHatch : validMTEList(mEnergyHatches)) {
-            IGregTechTileEntity energyHatch = tHatch.getBaseMetaTileEntity();
-            energy += energyHatch.getStoredEU();
-            maxEnergy += energyHatch.getEUCapacity();
-            maxEnergyUsage += energyHatch.getInputAmperage() * energyHatch.getInputVoltage();
-            minEnergyTier = Math.min(minEnergyTier, energyHatch.getInputVoltage());
-        }
+        // Current recipe progress in ticks
+        callbacks.put("progressTime", () -> Integer.toString(mProgresstime));
+        callbacks.put("maxProgressTime", () -> Integer.toString(mMaxProgresstime));
 
-        minEnergyTier = minEnergyTier == Long.MAX_VALUE ? 0 : minEnergyTier;
+        // Stored and maximum energy capacity across energy hatches
+        callbacks.put("energy", () -> {
+            long energy = 0L;
+            for (MTEHatchEnergy tHatch : validMTEList(mEnergyHatches)) {
+                energy += tHatch.getBaseMetaTileEntity()
+                    .getStoredEU();
+            }
+            return Long.toString(energy);
+        });
+        callbacks.put("maxEnergy", () -> {
+            long maxEnergy = 0L;
+            for (MTEHatchEnergy tHatch : validMTEList(mEnergyHatches)) {
+                maxEnergy += tHatch.getBaseMetaTileEntity()
+                    .getEUCapacity();
+            }
+            return Long.toString(maxEnergy);
+        });
 
-        Map<String, String> infoMap = new HashMap<>();
-        infoMap.put("progressTime", Integer.toString(mProgresstime));
-        infoMap.put("maxProgressTime", Integer.toString(mMaxProgresstime));
-        infoMap.put("energy", Long.toString(energy));
-        infoMap.put("maxEnergy", Long.toString(maxEnergy));
-        infoMap.put("energyUsage", Long.toString(getActualEnergyUsage()));
-        infoMap.put("maxEnergyUsage", Long.toString(maxEnergyUsage));
-        infoMap.put("minEnergyTier", Long.toString(minEnergyTier));
-        infoMap.put("maintenanceIssues", Integer.toString(getIdealStatus() - getRepairStatus()));
-        infoMap.put("energyEfficiency", Double.toString(mEfficiency / 10_000F));
-        infoMap.put("pollution", Double.toString(getAveragePollutionPercentage() / 100F));
+        // Actual energy usage per tick and maximum potential usage
+        callbacks.put("energyUsage", () -> Long.toString(getActualEnergyUsage()));
+        callbacks.put("maxEnergyUsage", () -> {
+            long maxEnergyUsage = 0;
+            for (MTEHatchEnergy tHatch : validMTEList(mEnergyHatches)) {
+                IGregTechTileEntity energyHatch = tHatch.getBaseMetaTileEntity();
+                maxEnergyUsage += energyHatch.getInputAmperage() * energyHatch.getInputVoltage();
+            }
+            return Long.toString(maxEnergyUsage);
+        });
 
-        return infoMap;
+        // Minimum voltage tier from energy hatches
+        callbacks.put("minEnergyTier", () -> {
+            long minEnergyTier = Long.MAX_VALUE;
+            for (MTEHatchEnergy tHatch : validMTEList(mEnergyHatches)) {
+                minEnergyTier = Math.min(
+                    minEnergyTier,
+                    tHatch.getBaseMetaTileEntity()
+                        .getInputVoltage());
+            }
+            minEnergyTier = minEnergyTier == Long.MAX_VALUE ? 0 : minEnergyTier;
+            return Long.toString(minEnergyTier);
+        });
+
+        // Miscellaneous info
+        callbacks.put("maintenanceIssues", () -> Integer.toString(getIdealStatus() - getRepairStatus()));
+        callbacks.put("energyEfficiency", () -> Double.toString(mEfficiency / 10_000F));
+        callbacks.put("pollution", () -> Double.toString(getAveragePollutionPercentage() / 100F));
+
+        return callbacks;
     }
 
     @Override
